@@ -15,17 +15,35 @@
 const svgPlay = `<svg class="r-4qtqp9 r-yyyyoo r-50lct3 r-dnmrzs r-bnwqim r-1plcrui r-lrvibr r-1srniue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"></path><path d="M8 5v14l11-7z"></path></svg>`;
 const svgPause = `<svg class="r-4qtqp9 r-yyyyoo r-50lct3 r-dnmrzs r-bnwqim r-1plcrui r-lrvibr r-1srniue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"></path><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
 
-
 const playTweet = (event) => {
   // on click change svg to pause
   let playButton = event.target.closest('[aria-label="Play"]');
-  // check if includes svgPlay
-  debugger;
+  let tweetDiv = playButton.parentElement.parentElement.parentElement.parentElement.querySelector('[data-testid="tweetText"]');
+  let synthesis = window.speechSynthesis;
+  let tweetText = tweetDiv.innerText;
+  let utterance = new SpeechSynthesisUtterance(tweetText);
   if (playButton.querySelector('svg').outerHTML.includes(svgPlay)) {
     console.log('playing');
+    if (synthesis.speaking) {
+      synthesis.resume();
+    }
+    synthesis.speak(utterance);
+    utterance.onboundary = (event) => {
+      let word = event.charIndex;
+      let wordLength = event.charLength;
+      let wordStart = word;
+      let wordEnd = word + wordLength;
+      let tweetText = tweetDiv.innerText;
+      let tweetTextBeforeWord = tweetText.slice(0, wordStart);
+      let tweetTextWord = tweetText.slice(wordStart, wordEnd);
+      let tweetTextAfterWord = tweetText.slice(wordEnd);
+      tweetDiv.innerHTML = `${tweetTextBeforeWord}<span style="background-color: #60a5fa;color:white;">${tweetTextWord}</span>${tweetTextAfterWord}`;
+    };
+    // highlight word being spoken
     playButton.querySelector('svg').parentElement.innerHTML = svgPause;
   } else {
     console.log('pausing');
+    synthesis.pause();
     playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
   }
   // if yes change to svgPause
