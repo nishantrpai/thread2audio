@@ -39,6 +39,9 @@ const playTweet = (event) => {
       let tweetTextAfterWord = tweetText.slice(wordEnd);
       tweetDiv.innerHTML = `${tweetTextBeforeWord}<span style="background-color: #60a5fa;color:white;">${tweetTextWord}</span>${tweetTextAfterWord}`;
     };
+    utterance.onend = () => {
+      playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
+    };
     // highlight word being spoken
     playButton.querySelector('svg').parentElement.innerHTML = svgPause;
   } else {
