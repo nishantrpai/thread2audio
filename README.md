@@ -1,21 +1,7 @@
-# <img src="public/icons/icon_48.png" width="45" align="left"> Thread2audio
+L1: Chrome extension to play Twitter thread
 
-My Chrome Extension
-
-## Features
-
-- Feature 1
-- Feature 2
-
-## Install
-
-[**Chrome** extension]() <!-- TODO: Add chrome extension link inside parenthesis -->
-
-## Contribution
-
-Suggestions and pull requests are welcomed!.
-
----
-
-This project was bootstrapped with [Chrome Extension CLI](https://github.com/dutiyesh/chrome-extension-cli)
-
+1. Add play icon besides `RT icon` everywhere on twitter.
+2. Play current tweet of which it is on.
+3. When you press play, it'll highlight the word and speak the word.
+4. Remove: # and @/links/images from tweet
+5. If play is pressed, the icon will change to pause
