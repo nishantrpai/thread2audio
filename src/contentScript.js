@@ -44,8 +44,12 @@ const playTweet = (event) => {
       utterance.onend = () => {
         tweetDiv.innerHTML = tweetText;
         playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
+        debugger;
         // if thread then play next tweet
-
+        // TODO:
+        // if same user replied to tweet then
+        // click tweet (will add the play button automatically), will change view to it
+        // then click play button
       };
     }
     playButton.querySelector('svg').parentElement.innerHTML = svgPause;
