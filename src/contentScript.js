@@ -21,11 +21,15 @@ const playTweet = (event) => {
   let synthesis = window.speechSynthesis;
 
   if (playButton.querySelector('svg').outerHTML.includes(svgPlay)) {
-    console.log('playing');
     if (synthesis.speaking) {
+      console.log('resume');
       synthesis.resume();
     } else {
+      // closest div with data-testid="tweet"
+      console.log('playing new tweet');
       let tweetDiv = playButton.parentElement.parentElement.parentElement.parentElement.querySelector('[data-testid="tweetText"]');
+      let tweetCtr = tweetDiv.closest('[data-testid="cellInnerDiv"]');
+      let tweetAuthor = tweetCtr.querySelector('a').href;
       let tweetText = tweetDiv.innerText;
       let utterance = new SpeechSynthesisUtterance(tweetText);
       synthesis.speak(utterance);
@@ -44,17 +48,19 @@ const playTweet = (event) => {
       utterance.onend = () => {
         tweetDiv.innerHTML = tweetText;
         playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
-        debugger;
-        // if thread then play next tweet
-        // TODO:
-        // if same user replied to tweet then
-        // click tweet (will add the play button automatically), will change view to it
-        // then click play button
+        if (tweetAuthor == tweetCtr.nextSibling.nextSibling.querySelector('a').href) {
+          // play next tweet
+          tweetCtr.nextElementSibling.nextElementSibling.querySelector('article').click();
+          setTimeout(() => {
+            synthesis.cancel();
+            tweetCtr.nextElementSibling.nextElementSibling.querySelector('[aria-label="Play"]').click();
+          },2000);
+        }
       };
     }
     playButton.querySelector('svg').parentElement.innerHTML = svgPause;
   } else {
-    console.log('pausing');
+    console.log('pausing tweet');
     synthesis.pause();
     playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
   }
@@ -72,7 +78,7 @@ const main = () => {
   // svg for pause
 
   // query selector using aria label
-  const replyButtons = document.querySelectorAll('[aria-label="Retweet"]'); //data-testid="retweet" for all retweet buttons
+  const replyButtons = document.querySelectorAll('[data-testid="retweet"]'); //data-testid="retweet" for all retweet buttons
   // get parent or parent for each replyButton
   const replyButtonParents = Array.from(replyButtons).map((button) => button.parentElement?.parentElement);
 
