@@ -1,5 +1,3 @@
-'use strict';
-
 // Content script file will run in the context of web page.
 // With content script you can manipulate the web pages using
 // Document Object Model (DOM).
@@ -14,16 +12,18 @@
 // Log `title` of current active web page
 const svgPlay = `<svg class="r-4qtqp9 r-yyyyoo r-50lct3 r-dnmrzs r-bnwqim r-1plcrui r-lrvibr r-1srniue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"></path><path d="M8 5v14l11-7z"></path></svg>`;
 const svgPause = `<svg class="r-4qtqp9 r-yyyyoo r-50lct3 r-dnmrzs r-bnwqim r-1plcrui r-lrvibr r-1srniue" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><path fill="none" d="M0 0h24v24H0z"></path><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>`;
+// @ts-ignore
+window.utterances = [];
+let windowurl = window.location.href;
 
 const playTweet = (event) => {
   // on click change svg to pause
   let playButton = event.target.closest('[aria-label="Play"]');
-  let synthesis = window.speechSynthesis;
-
   if (playButton.querySelector('svg').outerHTML.includes(svgPlay)) {
-    if (synthesis.speaking) {
+    playButton.querySelector('svg').parentElement.innerHTML = svgPause;
+    if (window.speechSynthesis.speaking) {
       console.log('resume');
-      synthesis.resume();
+      window.speechSynthesis.resume();
     } else {
       // closest div with data-testid="tweet"
       console.log('playing new tweet');
@@ -32,8 +32,10 @@ const playTweet = (event) => {
       let tweetAuthor = tweetCtr.querySelector('a').href;
       let tweetText = tweetDiv.innerText;
       let utterance = new SpeechSynthesisUtterance(tweetText);
-      synthesis.speak(utterance);
-      utterance.onboundary = (event) => {
+      // @ts-ignore
+      window.utterances.push(utterance);
+      window.speechSynthesis.speak(utterance);
+      utterance.addEventListener('boundary', (event) => {
         let word = event.charIndex;
         let wordLength = event.charLength;
         let wordStart = word;
@@ -42,30 +44,52 @@ const playTweet = (event) => {
         let tweetTextBeforeWord = tweetText.slice(0, wordStart);
         let tweetTextWord = tweetText.slice(wordStart, wordEnd);
         let tweetTextAfterWord = tweetText.slice(wordEnd);
-        tweetDiv.innerHTML = `${tweetTextBeforeWord}<span style="background-color: #60a5fa;color:white;">${tweetTextWord}</span>${tweetTextAfterWord}`;
-      };
+        // scroll to tweetDiv 
+        window.scrollTo({
+          behavior: 'smooth',
+          top: tweetDiv.getBoundingClientRect().top + window.scrollY - 100,
+        });
+        tweetDiv.innerHTML = `${tweetTextBeforeWord}<span style="background-color: #38bdf8;color: white;border: 3px solid #0c4a6e;border-radius: 5px;">${tweetTextWord}</span>${tweetTextAfterWord}`;
+      });
 
-      utterance.onend = () => {
+
+      // @ts-ignore
+      utterance.addEventListener('end', (event) => {
+        console.log('end event');
         tweetDiv.innerHTML = tweetText;
         playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
-        if (tweetAuthor == tweetCtr.nextSibling.nextSibling.querySelector('a').href) {
-          // play next tweet
-          tweetCtr.nextElementSibling.nextElementSibling.querySelector('article').click();
-          setTimeout(() => {
-            synthesis.cancel();
+        // thread
+        if (tweetCtr.nextElementSibling?.querySelector('[aria-label="Play"]')) {
+          if (tweetAuthor == tweetCtr?.nextElementSibling?.querySelector('a')?.href) {
+            tweetCtr.nextElementSibling.querySelector('[aria-label="Play"]').click();
+          }
+        } else {
+          if (tweetAuthor == tweetCtr?.nextElementSibling?.nextElementSibling?.querySelector('a')?.href) {
             tweetCtr.nextElementSibling.nextElementSibling.querySelector('[aria-label="Play"]').click();
-          },2000);
+          }
         }
-      };
+      });
+
+
     }
-    playButton.querySelector('svg').parentElement.innerHTML = svgPause;
   } else {
     console.log('pausing tweet');
-    synthesis.pause();
+    window.speechSynthesis.pause();
     playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
   }
-  // if yes change to svgPause
+};
 
+// on div click remove all utterances
+const stopAll = () => {
+  console.log('stop all');
+  window.speechSynthesis.cancel();
+  let playButtons = document.querySelectorAll('[aria-label="Play"]');
+  // remove all utterances
+  // @ts-ignore
+  playButtons.forEach((playButton) => {
+    // @ts-ignore
+    playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
+  });
 };
 
 const main = () => {
@@ -98,6 +122,7 @@ const main = () => {
 };
 
 const checkMutations = () => {
+  // @ts-ignore
   let observer = new MutationObserver(function (mutations, observer) {
     main();
   });
@@ -112,27 +137,26 @@ const checkMutations = () => {
 checkMutations();
 main();
 
-// Communicate with background file by sending a message
-chrome.runtime.sendMessage(
-  {
-    type: 'GREETINGS',
-    payload: {
-      message: 'Hello, my name is Con. I am from ContentScript.',
-    },
-  },
-  (response) => {
-    console.log(response.message);
-  }
-);
-
-// Listen for message
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'COUNT') {
-    console.log(`Current count is ${request.payload.count}`);
-  }
-
-  // Send an empty response
-  // See https://github.com/mozilla/webextension-polyfill/issues/130#issuecomment-531531890
-  sendResponse({});
-  return true;
+// window dom loaded
+window.addEventListener('DOMContentLoaded', () => {
+  // add stop all button
+  stopAll();
 });
+
+// on route change
+window.addEventListener('popstate', () => {
+  stopAll();
+});
+
+window.addEventListener(
+  "click",
+  () => {
+    requestAnimationFrame(async (event) => {
+      if (windowurl !== window.location.href) {
+        stopAll();
+        windowurl = window.location.href;
+      }
+    });
+  },
+  true
+);
