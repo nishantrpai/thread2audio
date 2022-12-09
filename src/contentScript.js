@@ -18,31 +18,36 @@ const svgPause = `<svg class="r-4qtqp9 r-yyyyoo r-50lct3 r-dnmrzs r-bnwqim r-1pl
 const playTweet = (event) => {
   // on click change svg to pause
   let playButton = event.target.closest('[aria-label="Play"]');
-  let tweetDiv = playButton.parentElement.parentElement.parentElement.parentElement.querySelector('[data-testid="tweetText"]');
   let synthesis = window.speechSynthesis;
-  let tweetText = tweetDiv.innerText;
-  let utterance = new SpeechSynthesisUtterance(tweetText);
+
   if (playButton.querySelector('svg').outerHTML.includes(svgPlay)) {
     console.log('playing');
     if (synthesis.speaking) {
       synthesis.resume();
-    }
-    synthesis.speak(utterance);
-    utterance.onboundary = (event) => {
-      let word = event.charIndex;
-      let wordLength = event.charLength;
-      let wordStart = word;
-      let wordEnd = word + wordLength;
+    } else {
+      let tweetDiv = playButton.parentElement.parentElement.parentElement.parentElement.querySelector('[data-testid="tweetText"]');
       let tweetText = tweetDiv.innerText;
-      let tweetTextBeforeWord = tweetText.slice(0, wordStart);
-      let tweetTextWord = tweetText.slice(wordStart, wordEnd);
-      let tweetTextAfterWord = tweetText.slice(wordEnd);
-      tweetDiv.innerHTML = `${tweetTextBeforeWord}<span style="background-color: #60a5fa;color:white;">${tweetTextWord}</span>${tweetTextAfterWord}`;
-    };
-    utterance.onend = () => {
-      playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
-    };
-    // highlight word being spoken
+      let utterance = new SpeechSynthesisUtterance(tweetText);
+      synthesis.speak(utterance);
+      utterance.onboundary = (event) => {
+        let word = event.charIndex;
+        let wordLength = event.charLength;
+        let wordStart = word;
+        let wordEnd = word + wordLength;
+        let tweetText = tweetDiv.innerText;
+        let tweetTextBeforeWord = tweetText.slice(0, wordStart);
+        let tweetTextWord = tweetText.slice(wordStart, wordEnd);
+        let tweetTextAfterWord = tweetText.slice(wordEnd);
+        tweetDiv.innerHTML = `${tweetTextBeforeWord}<span style="background-color: #60a5fa;color:white;">${tweetTextWord}</span>${tweetTextAfterWord}`;
+      };
+
+      utterance.onend = () => {
+        tweetDiv.innerHTML = tweetText;
+        playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
+        // if thread then play next tweet
+
+      };
+    }
     playButton.querySelector('svg').parentElement.innerHTML = svgPause;
   } else {
     console.log('pausing');
