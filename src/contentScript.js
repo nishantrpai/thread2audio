@@ -15,11 +15,14 @@ const svgPause = `<svg class="r-4qtqp9 r-yyyyoo r-50lct3 r-dnmrzs r-bnwqim r-1pl
 // @ts-ignore
 let windowurl = window.location.href;
 let boundaryEventListener = null;
+let endEventListener = null;
 let utterance = null;
+let mainPlayBtn = null;
 
 const playTweet = (event) => {
   // on click change svg to pause
   let playButton = event.target.closest('[aria-label="Play"]');
+  mainPlayBtn = playButton;
   if (playButton.querySelector('svg').outerHTML.includes(svgPlay)) {
     playButton.querySelector('svg').parentElement.innerHTML = svgPause;
     if (window.speechSynthesis.speaking) {
@@ -41,12 +44,19 @@ const playTweet = (event) => {
       console.log('utterance', utterance);
       // @ts-ignore
       window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
       boundaryEventListener = (event) => {
         let word = event.charIndex;
+
+        // if it is a url or a hashtag don't highlight
+        if (tweetText[word] === 'h' && tweetText[word + 1] === 't' && tweetText[word + 2] === 't' && tweetText[word + 3] === 'p') {
+          return;
+        }
+
         let wordLength = event.charLength;
         let wordStart = word;
         let wordEnd = word + wordLength;
-        let tweetText = tweetDiv.innerText;
         let tweetTextBeforeWord = tweetText.slice(0, wordStart);
         let tweetTextWord = tweetText.slice(wordStart, wordEnd);
         let tweetTextAfterWord = tweetText.slice(wordEnd);
@@ -57,10 +67,10 @@ const playTweet = (event) => {
 
 
       // @ts-ignore
-      utterance.addEventListener('end', (event) => {
+      let endEventListener = (event) => {
         console.log('end event');
         tweetDiv.innerHTML = tweetText;
-        playButton.querySelector('svg').parentElement.innerHTML = svgPlay;
+        mainPlayBtn.querySelector('svg').parentElement.innerHTML = svgPlay;
         // thread
         if (tweetCtr.nextElementSibling?.querySelector('[aria-label="Play"]')) {
           if (tweetAuthor == tweetCtr?.nextElementSibling?.querySelector('a')?.href) {
@@ -71,7 +81,8 @@ const playTweet = (event) => {
             tweetCtr.nextElementSibling.nextElementSibling.querySelector('[aria-label="Play"]').click();
           }
         }
-      });
+      };
+      utterance.addEventListener('end', endEventListener);
 
 
     }
@@ -88,7 +99,10 @@ const stopAll = () => {
   // destroy all utterances and stop speaking
   window.speechSynthesis.pause();
   utterance?.removeEventListener('boundary', boundaryEventListener);
-
+  utterance?.removeEventListener('end', endEventListener);
+  utterance = null;
+  boundaryEventListener = null;
+  endEventListener = null;
   let playButtons = document.querySelectorAll('[aria-label="Play"]');
   // remove all utterances
   // @ts-ignore
@@ -170,8 +184,10 @@ window.addEventListener(
 const destroyAll = () => {
   window.speechSynthesis && window.speechSynthesis.cancel();
   utterance?.removeEventListener('boundary', boundaryEventListener);
+  utterance?.removeEventListener('end', endEventListener);
   utterance = null;
   boundaryEventListener = null;
+  endEventListener = null;
   // reset speech synthesis
   stopAll();
 }
